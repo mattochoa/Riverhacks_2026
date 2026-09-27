@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>RiverHacks 2026</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #08131a; color: #e8f6f3; }
+      main { width: min(42rem, calc(100% - 2rem)); }
+      h1 { margin-bottom: .4rem; font-size: clamp(2rem, 7vw, 4rem); }
+      p { color: #a9c5c0; line-height: 1.6; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .8rem; margin-top: 2rem; }
+      .card { padding: 1rem; border: 1px solid #22433f; border-radius: .8rem; background: #10252b; }
+      .label { display: block; color: #8aaca7; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
+      .value { display: block; margin-top: .4rem; font-weight: 700; }
+      .ok { color: #76e6b5; }
+      .error { color: #ff9f9f; }
+      a { color: #76e6b5; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Arkansas River Valley technology showcase</p>
+      <h1>RiverHacks 2026</h1>
+      <p>The portable application stack is online. This page checks the API,
+        PostgreSQL readiness, and the independent pipeline worker.</p>
+      <section class="grid" aria-label="Service status">
+        <div class="card"><span class="label">API</span><span id="api" class="value">Checking…</span></div>
+        <div class="card"><span class="label">Database</span><span id="database" class="value">Checking…</span></div>
+        <div class="card"><span class="label">Worker</span><span id="worker" class="value">Checking…</span></div>
+      </section>
+      <p><a href="/api/docs">Open API documentation</a></p>
+    </main>
+    <script>
+      const setStatus = (id, text, ok) => {
+        const element = document.getElementById(id);
+        element.textContent = text;
+        element.className = `value ${ok ? "ok" : "error"}`;
+      };
+
+      async function refresh() {
+        try {
+          const response = await fetch("/api/health");
+          setStatus("api", response.ok ? "Online" : "Unavailable", response.ok);
+        } catch { setStatus("api", "Unavailable", false); }
+
+        try {
+          const response = await fetch("/api/ready");
+          setStatus("database", response.ok ? "Ready" : "Unavailable", response.ok);
+        } catch { setStatus("database", "Unavailable", false); }
+
+        try {
+          const response = await fetch("/api/heartbeats");
+          const body = await response.json();
+          const worker = body.services?.find(service => service.service_name === "worker");
+          setStatus("worker", worker ? "Running" : "Starting", Boolean(worker));
+        } catch { setStatus("worker", "Unavailable", false); }
+      }
+
+      refresh();
+      setInterval(refresh, 15000);
+    </script>
+  </body>
+</html>

@@ -5,17 +5,16 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY worker/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN addgroup --system riverhacks \
     && adduser --system --ingroup riverhacks riverhacks
 
-COPY app ./app
+COPY worker ./worker
+COPY pipelines ./pipelines
 COPY shared ./shared
 
 USER riverhacks
 
-EXPOSE 8000
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "worker.main"]
